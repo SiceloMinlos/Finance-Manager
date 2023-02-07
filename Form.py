@@ -1,8 +1,10 @@
 import streamlit as st
 import sqlite3
 
+st.set_page_config(initial_sidebar_state="collapsed")
+
 # Use streamlit to display a header in the web app
-st.markdown("<h1 style='text-align: center; color: #454545;'>Let's get started</h1>",
+st.markdown("<h1 style='text-align: center; color: #fff;'>Let's get you started</h1>",
             unsafe_allow_html=True)
 
 # Use streamlit to display a form in the web app
@@ -70,5 +72,17 @@ connection.close()
 def css(css_file):
     with open(css_file) as file:
         st.markdown(f"<style>{file.read()}</style>", unsafe_allow_html=True)
+
+hide_hamburger_and_footer = """
+
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    </style>
+
+"""
+
+st.markdown(hide_hamburger_and_footer, unsafe_allow_html=True)
 
 css("css/styles.css")
