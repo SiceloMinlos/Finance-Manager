@@ -7,82 +7,102 @@ st.set_page_config(initial_sidebar_state="collapsed")
 st.markdown("<h1 style='text-align: center; color: #fff;'>Let's get you started</h1>",
             unsafe_allow_html=True)
 
-# Use streamlit to display a form in the web app
-form = """
-  <form action="/" class="form">
+# name = st.text_input("Name")
+with st.form(key = 'user_info'):
+    st.markdown("<h4 style='text-align: center; color: #565656;'>User Information</h4>",
+      unsafe_allow_html=True)
 
-    <input type="text" id="fname" name="firstname" placeholder="Your name">
+    first_name = st.text_input(label="First_name")
+    last_name = st.text_input(label="Last_name")
+    uploaded_files = st.file_uploader("Choose a CSV/XLMS file", accept_multiple_files=True)
 
-    <input type="text" id="lname" name="lastname" placeholder="Your last name..">
+    submit_form = st.form_submit_button(label="Submit", help="Click to register!")
 
-    <button type="submit">Submit</button>
-
-  </form>
-"""
-st.markdown(form, unsafe_allow_html=True)
-
-# Connect to an SQLite database (create a new database if it doesn't exist)
-connection = sqlite3.connect("userDatabase.db")
-cursor = connection.cursor()
-
-# Create a table to store the uploaded files (if it doesn't exist)
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS uploaded_files (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    data BLOB
-)
-""")
-
-# Use streamlit to allow file uploads
-uploaded_files = st.file_uploader("Choose a CSV/XLMS file", accept_multiple_files=True)
-
-# Keep track of the ID of each file that has been uploaded
-file_ids = []
-
-# Iterate over each uploaded file
-for uploaded_file in uploaded_files:
-    # Read the contents of the file
-    bytes_data = uploaded_file.read()
+def check_empty_fields(submit_form, first_name, last_name, uploaded_files):
+    """
+    Check if all the fields are non-empty.
     
-    # Store the file in the database
+    Args:
+    submit_form: bool
+    first_name: str
+    last_name: str
+    uploaded_files: list of files
+    
+    Returns: None
+    """
+    if submit_form:
+        if first_name and last_name and uploaded_files:
+            st.success(f"Success {first_name}, Please navigate to [Analysis](/Analysis)", icon="🔥")
+        else:
+            st.warning("Please fill all the fields", icon="🚨")
+
+def add_user_info(first_name, last_name, uploaded_files):
+    """
+    Connect to an SQLite database and store the uploaded files.
+    
+    Args:
+    id: int
+    first_name: str
+    last_name: str
+    uploaded_files: list of files
+    
+    Returns: None
+    """
+    connection = sqlite3.connect("userDatabase.db")
+    cursor = connection.cursor()
+
     cursor.execute("""
-    INSERT INTO uploaded_files (name, data)
-    VALUES (?,?)
-    """, (uploaded_file.name, bytes_data))
-    connection.commit()
-    
-    # Get the ID of the file that was just uploaded
-    file_id = cursor.lastrowid
-    file_ids.append(file_id)
+    CREATE TABLE IF NOT EXISTS uploaded_files (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        first_name TEXT,
+        last_name TEXT,
+        data BLOB,
+        file_name
+    )
+    """)
 
-# If the user closes the file uploader, remove the associated files from the database
-if not uploaded_files:
-    for file_id in file_ids:
+    file_ids = []
+  
+    for uploaded_file in uploaded_files:
+        bytes_data = uploaded_file.read()
+
         cursor.execute("""
-        DELETE FROM uploaded_files
-        WHERE id=?
-        """, (file_id,))
+        SELECT id FROM uploaded_files WHERE id = 1
+        """)
+
+        result = cursor.fetchone()
+
+        if result:
+            cursor.execute("""
+            UPDATE uploaded_files SET first_name = ?, last_name = ?, data = ?, file_name = ? WHERE id = 1
+            """, (first_name, last_name, bytes_data, uploaded_file.name))
+        else:
+            cursor.execute("""
+            INSERT INTO uploaded_files (first_name, last_name, data, file_name)
+            VALUES (?,?,?,?)
+            """, (first_name, last_name, bytes_data, uploaded_file.name))
+
         connection.commit()
+        
+    connection.close()
 
-# Close the connection to the database
-connection.close()
+def hide_ui_elements():
+    """
+    Hide the hamburger and footer of the streamlit app.
+    
+    Returns: None
+    """
+    hide_hamburger_and_footer = """
+        <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+        </style>
+    """
+    st.markdown(hide_hamburger_and_footer, unsafe_allow_html=True)
 
-# Use streamlit to display custom CSS
-def css(css_file):
-    with open(css_file) as file:
-        st.markdown(f"<style>{file.read()}</style>", unsafe_allow_html=True)
+if __name__ == "__main__":
+  hide_ui_elements()
+  check_empty_fields(submit_form, first_name, last_name, uploaded_files)
+  add_user_info(first_name, last_name, uploaded_files)
 
-hide_hamburger_and_footer = """
-
-    <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    </style>
-
-"""
-
-st.markdown(hide_hamburger_and_footer, unsafe_allow_html=True)
-
-css("css/styles.css")
