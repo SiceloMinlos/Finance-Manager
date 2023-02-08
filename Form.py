@@ -1,5 +1,5 @@
 import streamlit as st
-import sqlite3
+import sqlite3, datetime
 
 st.set_page_config(initial_sidebar_state="collapsed")
 
@@ -14,6 +14,7 @@ with st.form(key = 'user_info'):
 
     first_name = st.text_input(label="First_name")
     last_name = st.text_input(label="Last_name")
+    dob = st.date_input("When\'s your birthday")
     uploaded_files = st.file_uploader("Choose a CSV/XLMS file", accept_multiple_files=True)
 
     submit_form = st.form_submit_button(label="Submit", help="Click to register!")
@@ -56,6 +57,7 @@ def add_user_info(first_name, last_name, uploaded_files):
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         first_name TEXT,
         last_name TEXT,
+        dob DATE,
         data BLOB,
         file_name
     )
@@ -74,13 +76,13 @@ def add_user_info(first_name, last_name, uploaded_files):
 
         if result:
             cursor.execute("""
-            UPDATE uploaded_files SET first_name = ?, last_name = ?, data = ?, file_name = ? WHERE id = 1
-            """, (first_name, last_name, bytes_data, uploaded_file.name))
+            UPDATE uploaded_files SET first_name = ?, last_name = ?, dob = ?, data = ?, file_name = ? WHERE id = 1
+            """, (first_name, last_name, dob, bytes_data, uploaded_file.name))
         else:
             cursor.execute("""
-            INSERT INTO uploaded_files (first_name, last_name, data, file_name)
-            VALUES (?,?,?,?)
-            """, (first_name, last_name, bytes_data, uploaded_file.name))
+            INSERT INTO uploaded_files (first_name, last_name, dob, data, file_name)
+            VALUES (?,?,?,?,?)
+            """, (first_name, last_name, dob, bytes_data, uploaded_file.name))
 
         connection.commit()
         
